@@ -23,22 +23,22 @@
         dot (l)]
     (cond
       (not (variable? v))
-      (list :error (str "Bad variable in lambda: " v))
+      {:type :error :value (str "Bad variable in lambda: " v)}
       (not (= dot \.))
-      (list :error (str "Missing DOT. Found: ") dot)
+      {:type :error :value (str "Missing DOT. Found: " dot)}
       :else
-      (list :fn  (str v) (expression l)))))
+      {:type :lambda :parm  (str v) :body (expression l)})))
 
 (defn variable [l]
   (let [w (l)]
     (if (variable? w)
-      (list :var (str w))
-      (list :error (str "Bad variable: " w)))))
+      {:type :variable :value (str w)}
+      {:type :error :value (str "Bad variable: " w)})))
 
 (defn application [l]
   (let [e1 (expression l)
         e2 (expression l)]
-    (list :appl e1 e2)))
+    {:type :appl :left e1 :right e2}))
 
 (defn expression [l]
   (let [c (l)]
@@ -47,7 +47,7 @@
       (let [e (application l)
             rp (l)]
         (if (not= rp \))
-          (list :error "Missing right paren. got " rp)
+          {:type :error :value (str "Missing right paren. got " rp)}
           e))
       (= c \/)
       (lambda (l c))
