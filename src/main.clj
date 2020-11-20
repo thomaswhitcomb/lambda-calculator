@@ -24,8 +24,10 @@
     (cond
       (not (variable? v))
       {:type :error :value (str "Bad variable in lambda: " v)}
+
       (not (= dot \.))
       {:type :error :value (str "Missing DOT. Found: " dot)}
+
       :else
       {:type :lambda :parm  (str v) :body (expression l)})))
 
@@ -49,8 +51,10 @@
         (if (not= rp \))
           {:type :error :value (str "Missing right paren. got " rp)}
           e))
+
       (= c \/)
       (lambda (l c))
+
       :else
       (variable (l c)))))
 
