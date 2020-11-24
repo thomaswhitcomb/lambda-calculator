@@ -20,6 +20,17 @@
      b
   )))
 
+(defn to-str [{t :type :as expression}]
+  (cond
+    (= t :variable)
+    (expression :value)
+
+    (= t :lambda)
+    (str  "/" ((expression :parm) :value) "." (to-str (expression :body)))
+
+    (= t :appl)
+    (str "(" (to-str (expression :lhs)) " " (to-str (expression :rhs)) ")")
+    ))
 
 (defn run [{t :type :as expression}]
   (println "run " expression)
