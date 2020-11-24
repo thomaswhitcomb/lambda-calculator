@@ -1,70 +1,63 @@
  (ns main (:gen-class)
-    (:import (java.util Date TimeZone))
     (:require
       [clojure.test :refer [is]]
       [clojure.string :as s]
+      [lexer :as l]
+      [parser :as p]
+      [evaluator :as e]
       ))
 
-(defn variable? [v]
-  (and (>= (int v) (int \a)) (<= (int v) (int \z))))
-
-(defn new-lexer [s]
-  (let [packed (apply str (filter #(not= % \space ) s))
-        io (java.io.PushbackReader. (java.io.StringReader. (str packed)))]
-    (fn lexer
-      ([] (let [n (.read io)] (if (= n -1) nil (char n))))
-      ([c] (do (.unread io (int c)) lexer)))))
-
-(declare expression)
-
-(defn lambda [l]
-  (let [lambda (l)
-        v (l)
-        dot (l)]
-    (cond
-      (not (variable? v))
-      {:type :error :value (str "Bad variable in lambda: " v)}
-
-      (not (= dot \.))
-      {:type :error :value (str "Missing DOT. Found: " dot)}
-
-      :else
-      {:type :lambda :parm  (str v) :body (expression l)})))
-
-(defn variable [l]
-  (let [w (l)]
-    (if (variable? w)
-      {:type :variable :value (str w)}
-      {:type :error :value (str "Bad variable: " w)})))
-
-(defn application [l]
-  (let [e1 (expression l)
-        e2 (expression l)]
-    {:type :appl :left e1 :right e2}))
-
-(defn expression [l]
-  (let [c (l)]
-    (cond
-      (= c \()
-      (let [e (application l)
-            rp (l)]
-        (if (not= rp \))
-          {:type :error :value (str "Missing right paren. got " rp)}
-          e))
-
-      (= c \/)
-      (lambda (l c))
-
-      :else
-      (variable (l c)))))
-
-(defn parser [l]
-  (let [c (l)]
-    (if (nil? c)
-      []
-      (let [e (expression (l c))]
-        (cons e (parser l))))))
-
 (defn -main
-  [& args]
-  (new-lexer args))
+  [code]
+  (println (p/parse (l/new-lexer code))))
+
+(is (= (p/parse (l/new-lexer "/y.(/x.x (y x))"))
+       (list {:type :lambda,
+              :parm {:type :variable, :value "y"},
+              :body {
+                     :type :appl,
+                     :lhs {
+                            :type :lambda,
+                            :parm {:type :variable, :value "x"},
+                            :body {:type :variable, :value "x"}},
+                     :rhs {
+                             :type :appl,
+                             :lhs {:type :variable, :value "y"},
+                             :rhs {:type :variable, :value "x"}}}})))
+(is (= (p/parse (l/new-lexer "(/y.((/x.x (/z.z b)) a) (y x))"))
+       (list {:type :appl,
+              :lhs {
+                     :type :lambda,
+                     :parm {:type :variable, :value "y"}
+                     :body {
+                            :type :appl,
+                            :lhs {
+                                   :type :appl,
+                                   :lhs {
+                                          :type :lambda,
+                                          :parm {:type :variable, :value "x"}
+                                          :body {
+                                                 :type :variable,
+                                                 :value "x"}},
+                                   :rhs {
+                                           :type :appl,
+                                           :lhs {
+                                                  :type :lambda,
+                                                  :parm {:type :variable, :value "z"}
+                                                  :body {
+                                                         :type :variable,
+                                                         :value "z"}},
+                                           :rhs {
+                                                   :type :variable,
+                                                   :value "b"}}},
+                            :rhs {
+                                    :type :variable,
+                                    :value "a"}}},
+              :rhs {
+                      :type :appl,
+                      :lhs {
+                             :type :variable,
+                             :value "y"},
+                      :rhs {
+                              :type :variable,
+                              :value "x"}}})))

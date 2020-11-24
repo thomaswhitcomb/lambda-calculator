@@ -1,0 +1,58 @@
+ (ns parser (:gen-class)
+    (:require
+      [clojure.test :refer [is]]
+      [clojure.string :as s]
+      ))
+
+(defn variable? [v]
+  (and (>= (int v) (int \a)) (<= (int v) (int \z))))
+
+(declare expression)
+
+(defn lambda [l]
+  (let [lambda (l)
+        v (l)
+        dot (l)]
+    (cond
+      (not (variable? v))
+      {:type :error :value (str "Bad variable in lambda: " v)}
+
+      (not (= dot \.))
+      {:type :error :value (str "Missing DOT. Found: " dot)}
+
+      :else
+      {:type :lambda :parm {:type :variable :value (str v)} :body (expression l)})))
+
+(defn variable [l]
+  (let [w (l)]
+    (if (variable? w)
+      {:type :variable :value (str w)}
+      {:type :error :value (str "Bad variable: " w)})))
+
+(defn application [l]
+  (let [e1 (expression l)
+        e2 (expression l)]
+    {:type :appl :lhs e1 :rhs e2}))
+
+(defn expression [l]
+  (let [c (l)]
+    (cond
+      (= c \()
+      (let [e (application l)
+            rp (l)]
+        (if (not= rp \))
+          {:type :error :value (str "Missing right paren. got " rp)}
+          e))
+
+      (= c \/)
+      (lambda (l c))
+
+      :else
+      (variable (l c)))))
+
+(defn parse [l]
+  (let [c (l)]
+    (if (nil? c)
+      []
+      (let [e (expression (l c))]
+        (cons e (parse l))))))
